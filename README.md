@@ -1,5 +1,7 @@
 # 🚌 대화형 버스 안내 AI 챗봇 (대화로路)
 
+[![대화로路 시연영상](https://img.youtube.com/vi/awujKkmEsgY/0.jpg)](https://www.youtube.com/watch?v=awujKkmEsgY)
+
 이 프로젝트는 대전광역시청을 중심으로 **버스 도착 정보**와 **최적 경로**를 음성으로 안내해 주는 AI 챗봇 시스템입니다.  
 사용자의 음성을 인식(STT)하여 Google Gemini LLM으로 의도를 파악하고, 대전 BIS(버스 정보 시스템) API를 통해 실시간 데이터를 조회한 뒤, 음성(TTS)으로 답변을 제공합니다.
 
