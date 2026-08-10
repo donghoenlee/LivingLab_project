@@ -6,12 +6,10 @@
 사용자의 음성을 인식(STT)하여 Google Gemini LLM으로 의도를 파악하고, 대전 BIS(버스 정보 시스템) API를 통해 실시간 데이터를 조회한 뒤, 음성(TTS)으로 답변을 제공합니다.
 <br/>
 
-### 🎬 프로젝트 시연 영상 (클릭 시 YouTube 이동)
-
 <a href="https://www.youtube.com/watch?v=awujKkmEsgY" target="_blank">
   <img src="https://img.youtube.com/vi/awujKkmEsgY/maxresdefault.jpg" width="500" alt="대화로 시연 영상">
 </a>
-
+### 🎬 프로젝트 시연 영상 (클릭 시 YouTube 이동)
 <br/>
 
 </div>
