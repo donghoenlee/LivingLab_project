@@ -24,6 +24,54 @@
   - 특정 정류장의 버스 도착 정보 조회
   - 대전광역시청에서 특정 목적지까지 가는 직행 버스 검색
 - **AI 기반 자연어 처리**: Google Gemini API를 사용하여 사용자의 자연어 질문을 이해하고 적절한 함수를 호출하거나 답변을 생성합니다.
+- **단계별 예외 처리**: STT 시간 초과, API 사용량 한도 초과 등 각 구간에서 발생 가능한 오류를 개별적으로 감지하고 사용자에게 안내합니다.
+- **처리 시간 모니터링**: STT / LLM / TTS 각 단계의 소요 시간을 실시간으로 로깅하여 성능 병목을 파악할 수 있습니다.
+
+---
+
+## 🏗️ 아키텍처
+
+음성 입력부터 응답 출력까지 4단계 파이프라인으로 구성되어 있으며, `main.py`의 `Pipeline` 클래스가 전체 흐름을 조율합니다.
+
+```mermaid
+flowchart LR
+    A[🎙️ 사용자 음성] --> B["STT\n(Google Cloud Speech-to-Text)"]
+    B --> C["LLM 의도 분석\n(Google Gemini API)"]
+    C -->|Function Calling| D["대전 BIS Open API\n(정류소 검색 / 도착 정보 조회)"]
+    D -->|XML 파싱 결과| C
+    C --> E["TTS\n(Google Cloud Text-to-Speech)"]
+    E --> F[🔊 음성 답변 출력]
+```
+
+1. **STT** — `stt_module.py`가 PyAudio로 마이크 스트림을 열고 Google Cloud Speech-to-Text 스트리밍 API로 실시간 음성 인식을 수행합니다.
+2. **LLM (의도 분석 및 함수 호출)** — `llm_module.py`가 Gemini(`gemini-2.5-flash`)에 Function Calling 도구(`get_bus_arrival_info`, `find_direct_bus_from_city_hall`)를 등록하고, 사용자의 질문 의도에 맞는 함수를 선택·호출합니다.
+3. **외부 API 연동** — `bis_module.py`가 대전 BIS Open API에 요청을 보내 정류소 ID 검색 및 실시간 도착 정보를 XML로 응답받아 파싱합니다.
+4. **TTS** — `tts_module.py`가 최종 응답 텍스트를 SSML로 감싸 Google Cloud Text-to-Speech로 합성하고, `mpg123`으로 재생합니다.
+
+---
+
+## 🛠️ 기술 스택
+
+| 분류 | 기술 |
+| --- | --- |
+| 언어 | Python 3.x |
+| AI / LLM | Google Gemini API (`gemini-2.5-flash`), Function Calling |
+| 음성 인식 (STT) | Google Cloud Speech-to-Text (Streaming Recognition) |
+| 음성 합성 (TTS) | Google Cloud Text-to-Speech (SSML, WaveNet) |
+| 외부 데이터 연동 | 대전 BIS(버스 정보 시스템) Open API (REST / XML) |
+| 오디오 입출력 | PyAudio, mpg123, ALSA (`amixer`) |
+| 환경 설정 관리 | python-dotenv |
+| HTTP 통신 | requests |
+
+---
+
+## ⚙️ 설계 및 운영 특징
+
+- **환경 변수 기반 설정 관리**: API 키, 오디오 장치 인덱스, BIS API 엔드포인트 등 운영 환경에 따라 바뀔 수 있는 값을 `.env`와 `config.py`로 일원화하여 관리합니다.
+- **계층별 예외 처리**: STT 시간 초과(`DeadlineExceeded`), 세션 종료(`OutOfRange`), Gemini API 사용량 초과(`ResourceExhausted`), BIS API 통신 오류 등 각 외부 연동 지점마다 예외를 개별적으로 처리하여 한 구간의 장애가 전체 시스템 중단으로 이어지지 않도록 설계했습니다.
+- **리소스 생명주기 관리**: PyAudio 인터페이스를 전역으로 재사용하고, `atexit`을 통해 프로그램 종료 시 오디오 리소스를 자동으로 정리합니다.
+- **성능 가시성 확보**: STT / LLM / TTS 각 단계의 처리 시간을 로그로 남겨 병목 구간을 쉽게 진단할 수 있도록 했습니다.
+- **Linux 오디오 시스템 운영**: `amixer`를 통한 출력 볼륨 제어, `libasound2-dev`/`alsa-utils` 기반 오디오 장치 설정 등 실제 배포 환경(라즈베리파이 등 임베디드 리눅스)을 고려한 시스템 구성을 포함합니다.
 
 ---
 
